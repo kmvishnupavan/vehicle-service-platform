@@ -17,12 +17,11 @@ ARG VITE_VAPID_PUBLIC_KEY
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
     VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
     VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY \
-    VITE_VAPID_PUBLIC_KEY=$VITE_VAPID_PUBLIC_KEY \
-    NODE_ENV=production
+    VITE_VAPID_PUBLIC_KEY=$VITE_VAPID_PUBLIC_KEY
 
-# Install dependencies using clean install
+# Install dependencies including build tools (TypeScript & Vite)
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # Copy source files
 COPY tsconfig.json tsconfig.node.json vite.config.ts tailwind.config.js postcss.config.js index.html ./
