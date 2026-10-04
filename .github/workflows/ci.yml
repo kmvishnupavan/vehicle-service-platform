@@ -1,0 +1,242 @@
+name: Continuous Integration & Production Verification
+
+on:
+  push:
+    branches: [main, master, staging, develop]
+  pull_request:
+    branches: [main, master, staging]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # JOB 1: Backend Unit & Integration Tests (397+ tests)
+  # ----------------------------------------------------------------------------
+  backend-tests:
+    name: Backend Test Suite (Pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Backend Test Suite
+        env:
+          ENVIRONMENT: test
+          SUPABASE_URL: https://dfigtryvvujhwuiyzdvs.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_test_ci_key
+          SUPABASE_SERVICE_ROLE_KEY: service_role_test_ci_key
+          SUPABASE_JWT_SECRET: test_jwt_secret_key_minimum_32_characters_long
+          LIVE_PAYOUTS_ENABLED: "false"
+          PAYOUT_PROVIDER_MODE: sandbox
+        run: |
+          pytest -v --tb=short
+
+  # ----------------------------------------------------------------------------
+  # JOB 2: Frontend Test Suite (82+ Vitest tests)
+  # ----------------------------------------------------------------------------
+  frontend-tests:
+    name: Frontend Test Suite (Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Vitest Unit & Component Tests
+        run: npm test -- --run
+
+  # ----------------------------------------------------------------------------
+  # JOB 3: Frontend Production Build & Bundle Generation
+  # ----------------------------------------------------------------------------
+  frontend-build:
+    name: Frontend Build & Typecheck (Vite & TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Production Assets
+        env:
+          VITE_API_BASE_URL: https://api.vehiclecare.app/api/v1
+          VITE_SUPABASE_URL: https://dfigtryvvujhwuiyzdvs.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_OZdsss6XPdfV3SLTqlKncw_BKqgJAMn
+        run: npm run build
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  # ----------------------------------------------------------------------------
+  # JOB 4: Backend Quality & Configuration Checks
+  # ----------------------------------------------------------------------------
+  quality-and-config:
+    name: Code Quality & Config Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify Environment Configuration Scenarios
+        working-directory: backend
+        run: |
+          pytest tests/test_environment_validation.py -v
+
+  # ----------------------------------------------------------------------------
+  # JOB 5: Security Audit & Secret Exposure Verification
+  # ----------------------------------------------------------------------------
+  security-and-secrets:
+    name: Security & Secret Exposure Check
+    needs: [frontend-build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Download Frontend Build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Run Secret Exposure & Bundle Scanner
+        run: |
+          python scripts/verify_secret_exposure.py
+
+      - name: Run Migration Safety & Drift Check
+        run: |
+          python scripts/validate_migrations.py
+
+  # ----------------------------------------------------------------------------
+  # JOB 6: Production Readiness Evaluation
+  # ----------------------------------------------------------------------------
+  production-readiness:
+    name: Production Readiness Gate
+    needs: [backend-tests, frontend-tests, quality-and-config]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Execute Production Readiness Checker
+        env:
+          ENVIRONMENT: staging
+          SUPABASE_URL: https://dfigtryvvujhwuiyzdvs.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_check
+          SUPABASE_SERVICE_ROLE_KEY: placeholder_service_role_key
+          LIVE_PAYOUTS_ENABLED: "false"
+          PAYOUT_PROVIDER_MODE: sandbox
+        run: |
+          python -m app.commands.production_readiness
+
+  # ----------------------------------------------------------------------------
+  # JOB 7: Docker Container Build Verification
+  # ----------------------------------------------------------------------------
+  docker-build:
+    name: Container Build Verification
+    needs: [backend-tests, frontend-tests, frontend-build, security-and-secrets, production-readiness]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: vehicle-service-backend:ci-test
+
+      - name: Build Frontend Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          build-args: |
+            VITE_API_BASE_URL=https://api.staging.vehiclecare.app/api/v1
+            VITE_SUPABASE_URL=https://dfigtryvvujhwuiyzdvs.supabase.co
+            VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_staging_key
+          tags: vehicle-service-frontend:ci-test

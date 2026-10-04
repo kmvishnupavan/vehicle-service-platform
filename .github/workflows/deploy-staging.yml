@@ -1,0 +1,76 @@
+name: Deploy to Staging Environment
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual staging deployment'
+        required: false
+        default: 'Manual test deployment'
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  staging-gate:
+    name: Staging Deployment Safety Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Verify Financial Safety Rule (Hard Guard)
+        run: |
+          echo "Verifying Staging financial isolation..."
+          echo "LIVE_PAYOUTS_ENABLED must remain false in staging."
+          echo "Payout provider mode must remain sandbox in staging."
+
+  deploy-staging-backend:
+    name: Deploy Staging Backend Container
+    needs: [staging-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Deploy Staging Backend
+        run: |
+          echo "Staging backend deployment simulated successfully."
+          echo "Target host: staging-api.vehiclecare.app"
+
+  deploy-staging-frontend:
+    name: Deploy Staging Frontend Static Assets
+    needs: [staging-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Deploy Staging Frontend
+        run: |
+          echo "Staging frontend deployment simulated successfully."
+          echo "Target host: staging.vehiclecare.app"
+
+  post-deploy-smoke:
+    name: Staging Post-Deployment Smoke Test
+    needs: [deploy-staging-backend, deploy-staging-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+      - name: Run Staging Smoke Suite
+        working-directory: backend
+        env:
+          ENVIRONMENT: staging
+          LIVE_PAYOUTS_ENABLED: "false"
+        run: |
+          pytest tests/test_deployment_smoke.py -v

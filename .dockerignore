@@ -1,0 +1,8 @@
+**/.venv
+**/node_modules
+**/.pytest_cache
+**/.git
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example
