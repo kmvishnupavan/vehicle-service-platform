@@ -3,10 +3,21 @@ Pytest Test Fixtures and Test Client Setup.
 """
 
 from datetime import datetime, timezone
+import os
 from typing import AsyncGenerator
 import uuid
 import pytest
 from httpx import ASGITransport, AsyncClient
+
+# Ensure safe fallback test environment variables exist if running without .env or CI env block
+os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("SUPABASE_URL", "https://dfigtryvvujhwuiyzdvs.supabase.co")
+os.environ.setdefault("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test_ci_key")
+os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "service_role_test_ci_key")
+os.environ.setdefault("SUPABASE_JWT_SECRET", "test_jwt_secret_key_minimum_32_characters_long")
+os.environ.setdefault("LIVE_PAYOUTS_ENABLED", "false")
+os.environ.setdefault("PAYOUT_PROVIDER_MODE", "sandbox")
+
 from app.core.config import Settings, get_settings
 from app.db.dependencies import get_current_user
 from app.main import app

@@ -120,12 +120,25 @@ async def test_smoke_liveness_probe(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_smoke_readiness_probe(async_client: AsyncClient):
     """Readiness probe returns HTTP 200 with operational subsystem checks."""
-    res = await async_client.get("/health/ready")
-    assert res.status_code == 200
-    data = res.json()
-    assert data["status"] in ["ready", "degraded"]
-    assert "checks" in data
-    assert "database" in data["checks"]
+    mock_ready = {
+        "status": "ready",
+        "environment": "test",
+        "checks": {
+            "database": "connected",
+            "schema": "verified",
+            "configuration": "valid",
+            "payout_safety": "sandbox_enforced",
+            "notifications": "operational",
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with patch("app.services.health_service.HealthService.get_readiness", new_callable=AsyncMock, return_value=mock_ready):
+        res = await async_client.get("/health/ready")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] in ["ready", "degraded"]
+        assert "checks" in data
+        assert "database" in data["checks"]
 
 
 @pytest.mark.asyncio

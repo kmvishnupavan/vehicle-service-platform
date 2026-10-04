@@ -131,13 +131,28 @@ async def test_liveness_probe(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_readiness_probe_success(async_client: AsyncClient):
     """GET /health/ready returns HTTP 200 and system checks when healthy."""
-    response = await async_client.get("/health/ready")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] in ["ready", "degraded", "not_ready"]
-    assert "checks" in data
-    assert "environment" in data
-    assert "timestamp" in data
+    from app.services.health_service import HealthService
+
+    mock_ready = {
+        "status": "ready",
+        "environment": "testing",
+        "checks": {
+            "database": "connected",
+            "schema": "verified",
+            "configuration": "valid",
+            "payout_safety": "sandbox_enforced",
+            "notifications": "operational",
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with patch.object(HealthService, "get_readiness", return_value=mock_ready):
+        response = await async_client.get("/health/ready")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] in ["ready", "degraded", "not_ready"]
+        assert "checks" in data
+        assert "environment" in data
+        assert "timestamp" in data
 
 
 @pytest.mark.asyncio

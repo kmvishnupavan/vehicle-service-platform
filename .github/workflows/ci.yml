@@ -136,6 +136,14 @@ jobs:
 
       - name: Verify Environment Configuration Scenarios
         working-directory: backend
+        env:
+          ENVIRONMENT: test
+          SUPABASE_URL: https://dfigtryvvujhwuiyzdvs.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_test_ci_key
+          SUPABASE_SERVICE_ROLE_KEY: service_role_test_ci_key
+          SUPABASE_JWT_SECRET: test_jwt_secret_key_minimum_32_characters_long
+          LIVE_PAYOUTS_ENABLED: "false"
+          PAYOUT_PROVIDER_MODE: sandbox
         run: |
           pytest tests/test_environment_validation.py -v
 
