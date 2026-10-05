@@ -65,6 +65,13 @@ async def create_booking(
 
 
 @router.get(
+    "",
+    response_model=list[BookingResponse],
+    summary="List user's bookings",
+    description="Retrieve all bookings belonging to authenticated customer with line items.",
+    include_in_schema=False,
+)
+@router.get(
     "/my-bookings",
     response_model=list[BookingResponse],
     summary="List user's bookings",
