@@ -37,15 +37,6 @@ services:
       - PAYOUT_PROVIDER_MODE=sandbox
       - LIVE_PAYOUTS_ENABLED=false
       - OSRM_BASE_URL=${OSRM_BASE_URL:-http://router.project-osrm.org}
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
-      - VAPID_CLAIM_EMAIL=${VAPID_CLAIM_EMAIL:-admin@vehiclecare.app}
-      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
-      - KILL_SWITCH_MATCHING_DISABLED=${KILL_SWITCH_MATCHING_DISABLED:-false}
-      - KILL_SWITCH_NEW_BOOKINGS_DISABLED=${KILL_SWITCH_NEW_BOOKINGS_DISABLED:-false}
-      - KILL_SWITCH_SCHEDULED_DISPATCH_DISABLED=${KILL_SWITCH_SCHEDULED_DISPATCH_DISABLED:-false}
-      - KILL_SWITCH_NOTIFICATIONS_DISABLED=${KILL_SWITCH_NOTIFICATIONS_DISABLED:-false}
-      - KILL_SWITCH_FORCE_ROUTING_FALLBACK=${KILL_SWITCH_FORCE_ROUTING_FALLBACK:-false}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live', timeout=3)"]
       interval: 15s
@@ -66,7 +57,6 @@ services:
         - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
         - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
-        - VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY:-}
     container_name: vehicle-service-frontend
     restart: unless-stopped
     ports:

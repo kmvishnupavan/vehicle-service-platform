@@ -1,4 +1,4 @@
-# Phase 15.1 & 15.2: Controlled Pilot Incident Log
+# Phase 15.1: Controlled Pilot Incident Log
 
 ## 1. Incident Classification & Severity Model
 

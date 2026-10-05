@@ -35,7 +35,7 @@ All changes adhere strictly to:
 ### C. Resilient Dynamic Road ETA (`OSRMRoutingProvider`)
 - Wraps external OpenStreetMap OSRM routing in a 3-strike circuit breaker and exponential backoff retry handler.
 - Fallback route generation computes haversine distance with urban tortuosity factor (1.414) and tags `eta_source = 'fallback'`.
-- Street-block grid coordinate quantization (~110m scale, 3 decimal places) in `ETACache` with 300s TTL prevents network thrashing.
+- Sub-meter grid coordinate quantization in `ETACache` with 300s TTL prevents network thrashing.
 
 ### D. Location Freshness & GPS Anomaly Detection (`public.mechanic_location_anomalies`)
 - Centralized tiered freshness states:
