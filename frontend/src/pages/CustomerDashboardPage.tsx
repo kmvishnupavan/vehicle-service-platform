@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   Navigation,
   Car,
+  Bike,
+  Wrench,
   Clock,
   ArrowRight,
   AlertCircle,
@@ -11,11 +13,13 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useMyBookings } from '../hooks/useBookings';
+import { useMyVehicles } from '../hooks/useVehicles';
 import { BookingStatus } from '../types/booking';
 import { ScheduleBookingModal } from '../components/booking/ScheduleBookingModal';
 
 export const CustomerDashboardPage: React.FC = () => {
   const { data: bookings, isLoading, error, refetch } = useMyBookings();
+  const { data: vehicles = [] } = useMyVehicles();
   const [schedulingBooking, setSchedulingBooking] = useState<{ id: string; number: string } | null>(null);
 
   if (isLoading) {
@@ -129,7 +133,78 @@ export const CustomerDashboardPage: React.FC = () => {
             Monitor service appointments, dispatch status, and live mechanic arrival.
           </p>
         </div>
+        <Link
+          to="/customer/book-service"
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition space-x-2 shrink-0"
+        >
+          <Wrench className="w-4 h-4" />
+          <span>Book a Service</span>
+        </Link>
       </div>
+
+      {/* My Vehicles Section */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+            <span>My Vehicles</span>
+            <span className="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded-full font-semibold">
+              {vehicles.length}
+            </span>
+          </h2>
+          <Link
+            to="/customer/book-service"
+            className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
+          >
+            + Add New Vehicle
+          </Link>
+        </div>
+
+        {vehicles.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-slate-500">
+            <Car className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-slate-700">No vehicles saved yet</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Add your vehicle during service booking to track ongoing maintenance history.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {vehicles.map((v) => (
+              <div
+                key={v.id}
+                className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="p-2.5 bg-slate-100 text-slate-700 rounded-xl">
+                    {v.vehicle_types?.name === 'bike' ? (
+                      <Bike className="w-5 h-5" />
+                    ) : (
+                      <Car className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+                      {v.registration_number}
+                    </span>
+                    <h4 className="font-bold text-slate-900 text-xs">
+                      {v.vehicle_brands?.name} {v.vehicle_models?.name}
+                    </h4>
+                    <span className="text-[11px] text-slate-500 capitalize">
+                      {v.fuel_type} • {v.manufacture_year || '2022'}
+                    </span>
+                  </div>
+                </div>
+                <Link
+                  to="/customer/book-service"
+                  className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
+                >
+                  Book
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Active Service Bookings */}
       <section className="space-y-4">
@@ -143,12 +218,23 @@ export const CustomerDashboardPage: React.FC = () => {
         </div>
 
         {activeBookings.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500">
-            <Car className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-700">No active bookings</p>
-            <p className="text-xs text-slate-500 mt-1">
-              All your booked services are complete or you haven't scheduled one yet.
-            </p>
+          <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 text-center text-slate-500 space-y-4 shadow-xs">
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
+              <Car className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-slate-900">No active service bookings</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Need doorstep vehicle service, oil change, battery jumpstart, or periodic maintenance?
+              </p>
+            </div>
+            <Link
+              to="/customer/book-service"
+              className="inline-flex items-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition space-x-1.5"
+            >
+              <Wrench className="w-4 h-4" />
+              <span>Book a Service Now</span>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

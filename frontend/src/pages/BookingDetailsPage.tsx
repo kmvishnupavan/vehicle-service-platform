@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -9,18 +9,21 @@ import {
   AlertCircle,
   MessageSquare,
   Star,
+  CreditCard,
 } from 'lucide-react';
 import { useBooking } from '../hooks/useBookings';
 import { useBookingReview } from '../hooks/useReview';
 import { BookingStatusTimeline } from '../components/booking/BookingStatusTimeline';
 import { MechanicInfoCard } from '../components/booking/MechanicInfoCard';
 import { StarRating } from '../components/review/StarRating';
+import { PaymentModal } from '../components/booking/PaymentModal';
 
 export const BookingDetailsPage: React.FC = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
   const { data: booking, isLoading, error } = useBooking(bookingId);
   const { data: review } = useBookingReview(bookingId);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -63,6 +66,10 @@ export const BookingDetailsPage: React.FC = () => {
     ['service_completed', 'payment_pending', 'paid'].includes(booking.booking_status) &&
     Boolean(booking.assigned_mechanic);
 
+  const isEligibleForPayment =
+    ['service_completed', 'payment_pending'].includes(booking.booking_status) &&
+    booking.payment_status !== 'paid';
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Top Bar */}
@@ -84,6 +91,17 @@ export const BookingDetailsPage: React.FC = () => {
               <MessageSquare className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
               Chat
             </Link>
+          )}
+
+          {isEligibleForPayment && (
+            <button
+              type="button"
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition"
+            >
+              <CreditCard className="w-4 h-4 mr-1.5" />
+              Pay Now (₹{parseFloat(booking.total_amount).toFixed(2)})
+            </button>
           )}
 
           {isEligibleForReview && !review && (
@@ -280,6 +298,14 @@ export const BookingDetailsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        bookingId={booking.id}
+        bookingNumber={booking.booking_number || booking.id.slice(0, 8).toUpperCase()}
+        totalAmount={booking.total_amount}
+      />
     </div>
   );
 };

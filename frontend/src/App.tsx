@@ -4,6 +4,7 @@ import { Navbar } from './components/layout/Navbar';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { CustomerDashboardPage } from './pages/CustomerDashboardPage';
+import { BookServicePage } from './pages/BookServicePage';
 import { BookingDetailsPage } from './pages/BookingDetailsPage';
 import { BookingTrackingPage } from './pages/BookingTrackingPage';
 import { BookingChatPage } from './pages/BookingChatPage';
@@ -84,6 +85,18 @@ export const App: React.FC = () => {
                   <CustomerDashboardPage />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/customer/book-service"
+              element={
+                <ProtectedRoute allowedRoles={['customer', 'admin']}>
+                  <BookServicePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/book-service"
+              element={<Navigate to="/customer/book-service" replace />}
             />
             {/* Alias /dashboard -> /customer/dashboard */}
             <Route
