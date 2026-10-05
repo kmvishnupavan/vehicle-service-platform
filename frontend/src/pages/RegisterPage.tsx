@@ -23,7 +23,7 @@ export const RegisterPage: React.FC = () => {
       if (signUpError) {
         setError(signUpError.message || 'Registration failed.');
       } else {
-        navigate('/dashboard');
+        navigate('/customer/dashboard');
       }
     } catch (err: any) {
       setError(err?.message || 'Registration failed. Please check connection.');

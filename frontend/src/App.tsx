@@ -17,9 +17,15 @@ import { AuditLogPage } from './pages/admin/AuditLogPage';
 import { MatchingDashboardPage } from './pages/admin/MatchingDashboardPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
+import { UserRole, getDefaultDashboardForRole } from './types/user';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: UserRole[];
+}
+
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+  const { user, role, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -34,7 +40,30 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Enforce role-based access control
+  if (allowedRoles && role && !allowedRoles.includes(role)) {
+    return <Navigate to={getDefaultDashboardForRole(role)} replace />;
+  }
+
   return <>{children}</>;
+};
+
+export const RoleHomeRedirect: React.FC = () => {
+  const { user, role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={getDefaultDashboardForRole(role)} replace />;
 };
 
 export const App: React.FC = () => {
@@ -49,18 +78,26 @@ export const App: React.FC = () => {
 
             {/* Protected Customer Routes */}
             <Route
-              path="/dashboard"
+              path="/customer/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['customer', 'admin']}>
                   <CustomerDashboardPage />
                 </ProtectedRoute>
               }
             />
-            <Route path="/bookings" element={<Navigate to="/dashboard" replace />} />
+            {/* Alias /dashboard -> /customer/dashboard */}
+            <Route
+              path="/dashboard"
+              element={<Navigate to="/customer/dashboard" replace />}
+            />
+            <Route
+              path="/bookings"
+              element={<Navigate to="/customer/dashboard" replace />}
+            />
             <Route
               path="/bookings/:bookingId"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['customer', 'admin']}>
                   <BookingDetailsPage />
                 </ProtectedRoute>
               }
@@ -68,7 +105,7 @@ export const App: React.FC = () => {
             <Route
               path="/bookings/:bookingId/tracking"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['customer', 'admin']}>
                   <BookingTrackingPage />
                 </ProtectedRoute>
               }
@@ -76,7 +113,7 @@ export const App: React.FC = () => {
             <Route
               path="/bookings/:bookingId/chat"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['customer', 'mechanic', 'admin', 'support']}>
                   <BookingChatPage />
                 </ProtectedRoute>
               }
@@ -84,7 +121,7 @@ export const App: React.FC = () => {
             <Route
               path="/bookings/:bookingId/review"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['customer', 'admin']}>
                   <BookingReviewPage />
                 </ProtectedRoute>
               }
@@ -94,7 +131,7 @@ export const App: React.FC = () => {
             <Route
               path="/mechanic/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['mechanic', 'admin']}>
                   <MechanicDashboardPage />
                 </ProtectedRoute>
               }
@@ -104,7 +141,7 @@ export const App: React.FC = () => {
             <Route
               path="/mechanic/payouts"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['mechanic', 'admin']}>
                   <MechanicPayoutsPage />
                 </ProtectedRoute>
               }
@@ -114,7 +151,7 @@ export const App: React.FC = () => {
             <Route
               path="/mechanic/payout-account"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['mechanic', 'admin']}>
                   <MechanicPayoutAccountPage />
                 </ProtectedRoute>
               }
@@ -124,7 +161,7 @@ export const App: React.FC = () => {
             <Route
               path="/admin/settlements"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'support']}>
                   <SettlementManagementPage />
                 </ProtectedRoute>
               }
@@ -134,7 +171,7 @@ export const App: React.FC = () => {
             <Route
               path="/admin/operations"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'support']}>
                   <OperationsDashboardPage />
                 </ProtectedRoute>
               }
@@ -144,7 +181,7 @@ export const App: React.FC = () => {
             <Route
               path="/admin/audit-logs"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'support']}>
                   <AuditLogPage />
                 </ProtectedRoute>
               }
@@ -154,15 +191,15 @@ export const App: React.FC = () => {
             <Route
               path="/admin/matching"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'support']}>
                   <MatchingDashboardPage />
                 </ProtectedRoute>
               }
             />
 
-            {/* Root redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* Role-Aware Root & Fallback Redirects */}
+            <Route path="/" element={<RoleHomeRedirect />} />
+            <Route path="*" element={<RoleHomeRedirect />} />
           </Routes>
         </main>
       </div>

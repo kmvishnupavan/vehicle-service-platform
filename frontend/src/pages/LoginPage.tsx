@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Wrench, AlertCircle, ArrowRight, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { resolveLoginRedirect } from '../types/user';
 
 export const LoginPage: React.FC = () => {
   const { signIn } = useAuth();
@@ -13,7 +14,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  const from = (location.state as any)?.from?.pathname;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,11 +22,12 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error: signInError } = await signIn(email, password);
+      const { error: signInError, role: userRole } = await signIn(email, password);
       if (signInError) {
         setError(signInError.message || 'Invalid email or password.');
       } else {
-        navigate(from, { replace: true });
+        const destination = resolveLoginRedirect(from, userRole);
+        navigate(destination, { replace: true });
       }
     } catch (err: any) {
       setError(err?.message || 'Authentication failed. Please check connection.');
