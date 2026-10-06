@@ -103,10 +103,26 @@ def create_application() -> FastAPI:
     from app.core.rate_limit import RateLimitMiddleware, SecurityHeadersMiddleware
     app.add_middleware(SecurityHeadersMiddleware)
 
-    # 2. CORS Middleware
+    # 2. CORS Middleware - Production Hardening
+    # Explicitly filter out wildcard '*' to eliminate reflect-all-origin vulnerability
+    sanitized_cors_origins = [
+        origin.strip()
+        for origin in settings.CORS_ORIGINS
+        if origin.strip() and origin.strip() != "*"
+    ]
+    prod_frontend = "https://vehicle-care-frontend.onrender.com"
+    if prod_frontend not in sanitized_cors_origins:
+        sanitized_cors_origins.append(prod_frontend)
+    if (
+        settings.FRONTEND_URL
+        and settings.FRONTEND_URL != "*"
+        and settings.FRONTEND_URL not in sanitized_cors_origins
+    ):
+        sanitized_cors_origins.append(settings.FRONTEND_URL)
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
+        allow_origins=sanitized_cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],

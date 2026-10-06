@@ -34,8 +34,14 @@ class Settings(BaseSettings):
     PORT: int = Field(default=8000, description="Port number for Uvicorn server")
 
     # CORS Configuration
-    CORS_ORIGINS: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
+    CORS_ORIGINS: list[str] | str = Field(
+        default=[
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "https://vehicle-care-frontend.onrender.com",
+        ],
         description="Allowed CORS origins list"
     )
 
