@@ -22,11 +22,13 @@ test.describe('Step 14: Role Authorization & Security E2E Validation', () => {
 
     await page.goto('/admin/operations');
 
-    // Verify customer is prevented from viewing admin data
-    await expect(
-      page.locator('text=Failed to load system readiness probes.')
-    ).toBeVisible();
+    // Verify customer is strictly prevented from accessing admin route and redirected to customer dashboard
+    await page.waitForURL('**/customer/dashboard**');
+    await expect(page).toHaveURL(/\/customer\/dashboard/);
+
+    // Verify privileged admin data is never rendered
     await expect(page.locator('text=Bookings Lifecycle')).toBeHidden();
+    await expect(page.locator('text=System Operations Center')).toBeHidden();
   });
 
   test('verifies zero service-role keys are exposed in client browser environment', async ({ page }) => {

@@ -144,7 +144,7 @@ async def get_pending_offer_endpoint(
     now_iso = datetime.now(timezone.utc).isoformat()
     assign_res = (
         service_client.table("mechanic_assignments")
-        .select("id, booking_id, assignment_status, distance_km, estimated_arrival_minutes, expires_at, attempt_number, bookings(booking_number, address_id, addresses(street_address, city), booking_items(services(name)))")
+        .select("id, booking_id, assignment_status, distance_km, estimated_arrival_minutes, expires_at, attempt_number, bookings(booking_number, address_id, addresses(address_line, area, city), booking_items(services(name)))")
         .eq("mechanic_id", str(mech_id))
         .eq("assignment_status", "offered")
         .gt("expires_at", now_iso)
@@ -163,7 +163,7 @@ async def get_pending_offer_endpoint(
     if items and items[0].get("services") and items[0]["services"].get("name"):
         svc_name = items[0]["services"]["name"]
 
-    area_parts = [addr_data.get("street_address"), addr_data.get("city")]
+    area_parts = [addr_data.get("address_line"), addr_data.get("area"), addr_data.get("city")]
     customer_area = ", ".join([p for p in area_parts if p]) or "Local Service Area"
 
     return {

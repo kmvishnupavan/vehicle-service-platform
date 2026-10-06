@@ -11,7 +11,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.core.logging import get_logger
 from app.core.security import verify_supabase_jwt
-from app.db.supabase import get_supabase_service_client
+from app.db.supabase import get_supabase_service_client, set_current_auth_token
 from app.schemas.user import (
     AuthenticatedUser,
     CustomerProfileResponse,
@@ -53,6 +53,7 @@ async def get_current_user(
 
     # Bind user_id to request state for structured request logging
     request.state.user_id = str(user_uuid)
+    set_current_auth_token(credentials.credentials)
 
     # Fetch authoritative profile from Supabase using privileged backend service client
     # This prevents tampering and guarantees role consistency with RLS and schema rules
