@@ -48,6 +48,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
 import pytest
 import httpx
+from pydantic import ValidationError
 from app.schemas.mechanic import MechanicLocationUpdate
 from app.services.mechanic_service import MechanicService
 from app.services.realtime_location_service import RealtimeLocationService
@@ -319,11 +320,13 @@ class TestPayloadValidationAndPrivacy:
 
     def test_18_unauthorized_mechanic_id_rejected(self):
         # Client cannot inject mechanic_id into MechanicLocationUpdate
-        with pytest.raises(Exception):
-            MechanicLocationUpdate(
-                latitude=Decimal("17.0"),
-                longitude=Decimal("78.0"),
-                mechanic_id=str(uuid.uuid4()),  # Forbidden extra field
+        with pytest.raises(ValidationError):
+            MechanicLocationUpdate.model_validate(
+                {
+                    "latitude": Decimal("17.0"),
+                    "longitude": Decimal("78.0"),
+                    "mechanic_id": str(uuid.uuid4()),  # Forbidden extra field
+                }
             )
 
     @pytest.mark.asyncio
